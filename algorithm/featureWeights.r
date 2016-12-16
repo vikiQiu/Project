@@ -49,6 +49,41 @@ giniIndex = function(t){
   giniTotal - giniIndex
 }
 
+# PCA特征权重
+pcaWeights = function(data,attrIndex){
+  dataCov = cov(as.matrix(data[,attrIndex]))
+  abs(eigen(dataCov)$vectors[,1])
+}
+
+# 相关系数特征权重
+corrWeights = function(data,attrIndex,labelIndex){
+  weights = numeric(length(attrIndex))
+  for (i in 1:length(weights)) weights[i] = abs(cor(as.matrix(data[,c(attrIndex[i],labelIndex)]))[1,2])
+  weights
+}
+
+# chisquare 特征权重
+chisqWeights = function(t){
+  chi = chisq.test(t)
+  #1 - chi$p.value
+  chi$statistic
+}
+
+chisqViki = function(t){
+  N = sum(t)
+  rowP = apply(t,2,sum)/N
+  colP = apply(t,1,sum)/N
+  stat = 0
+  for (i in 1:nrow(t)){
+    for (j in 1:ncol(t)){
+      numPre = rowP[j]*colP[i]*N
+      stat = stat + (t[i,j]-numPre)^2/numPre
+    }
+  }
+  df = (nrow(t)-1)*(ncol(t)-1)
+  pchisq(stat,df)
+}
+
 ##### 特征权重 ####
 weightsCompute = function(golf,labelIndex,method){
   weights = c()
@@ -59,7 +94,7 @@ weightsCompute = function(golf,labelIndex,method){
 }
 
 
-#### 一个示例 ####
+#### 一个示例 y为分类变量 ####
 golf = read.csv("golf01.csv",header =F)
 colnames(golf) = c("outlook","temperature","humidity","wind","play")
 
@@ -72,9 +107,19 @@ informationGain(table(golf$outlook,golf$play))
 informationGainRatio(table(golf$outlook,golf$play))
 giniIndex(table(golf$outlook,golf$play))
 
+# temperature的pca特征权重
+pcaWeights(golf,2)
+
 # golf的信息增益权重和信息增益率权重
 weightsCompute(golf,5,informationGain)
 weightsCompute(golf,5,informationGainRatio)
 weightsCompute(golf,5,giniIndex)
+weightsCompute(golf,5,chisqWeights)
+weightsCompute(golf,5,chisqViki)
+pcaWeights(golf,2:3)
+pcaWeights(poly,1:5)
 
+#### 一个示例 y为连续变量 #####
+poly = read.csv("Polynominal.csv",header = F)
+corrWeights(poly,1:5,6)
 
