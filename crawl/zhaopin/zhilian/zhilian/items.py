@@ -18,7 +18,7 @@ class ZhilianItem(Item):
     job_url=Field()
     # 公司名称
     job_enterprise=Field()
-    # 公司工作地点
+    # 工作地点
     job_place=Field()
     # 工资
     salary=Field()
@@ -38,4 +38,6 @@ class ZhilianItem(Item):
     enterprise_scale=Field()
     # 行业
     enterprise_industry=Field()
+    # 工作性质
+    job_attr = Field()
     pass
