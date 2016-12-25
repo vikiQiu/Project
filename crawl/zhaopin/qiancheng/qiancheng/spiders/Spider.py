@@ -9,6 +9,8 @@ output coding: utf-8
 
 import scrapy
 from qiancheng.items import QianchengItem
+import time
+import datetime
 
 class QianchengSpider(scrapy.Spider):
     name = "qiancheng"
@@ -16,20 +18,32 @@ class QianchengSpider(scrapy.Spider):
     DOWNLOAD_DELAY = 1
     COOKIES_ENABLED=False
 
+    page_num=1
+    date=''
+
     def start_requests(self):
-    	page_num=1
+        # today = time.strftime('%m-%d',time.localtime(time.time()))
+        yesterday = str(datetime.date.today() - datetime.timedelta(days=1))
+        yesterdays = yesterday.split('-')
+        self.date = yesterdays[1] + '-' + yesterdays[2]
+
         keyword='数据挖掘'
-    	for page in range(10,10+page_num):
-    		url='http://search.51job.com/jobsearch/search_result.php?fromJs=1&jobarea=000000%2C00&district=000000&funtype=0000&keyword='+keyword+'&keywordtype=2&curr_page='+str(page+1)+'&lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&list_type=0&fromType=14&dibiaoid=0&confirmdate=9'
-    		print '######################  第%d页:%s  ###################' % (page+1,url)
-    		yield scrapy.Request(url=url, callback=self.parse_page)
+    	url='http://search.51job.com/jobsearch/search_result.php?fromJs=1&jobarea=000000%2C00&district=000000&funtype=0000&keyword='+keyword+'&keywordtype=2&curr_page='+str(self.page_num)+'&lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&list_type=0&fromType=14&dibiaoid=0&confirmdate=9'
+    	print '######################  第%d页:%s  ###################' % (self.page_num,url)
+    	yield scrapy.Request(url=url, callback=self.parse_page)
 #
     def parse_page(self, response):
+        print('####### begin #######')
+        dates=response.xpath('//span[@class="t5"]/text()').extract()
+        print (dates[1])
+        if dates[1] != self.date: print('over');return
     	bodys=response.css('div.el')
     	for index,body in enumerate(bodys):
-    	    url=body.css('p.t1 span a::attr(href)').extract_first()
+    	    url=body.xpath('./p[@class="t1 "]/span/a/@href').extract_first()
     	    if url is None:
     	    	continue
+            print(url)
+            # if index>30: break
     	    #print '＃＃＃＃第%d个岗位########## new new new' % index
     	    item=QianchengItem()
     	    item['job_name']=body.css('p.t1 span a::attr(title)').extract_first()
@@ -41,9 +55,15 @@ class QianchengSpider(scrapy.Spider):
     	    else:
     	    	item['salary']='Null'
     	    item['date']=body.css('span.t5::text').extract_first()
-            if index > 50: # 方便调试放的if 可以去除
-    	        yield scrapy.Request(url=url,callback=self.parse_content,meta=item)
-                item['edu']=response.css('em.i2::text').extract_first()
+            if item['date'] != self.date: continue
+    	    yield scrapy.Request(url=url,callback=self.parse_content,meta=item)
+            item['edu']=response.css('em.i2::text').extract_first()
+        self.page_num = self.page_num+1
+        print('page_num is ',self.page_num)
+        url='http://search.51job.com/jobsearch/search_result.php?fromJs=1&jobarea=000000%2C00&district=000000&funtype=0000&keyword='+keyword+'&keywordtype=2&curr_page='+str(self.page_num)+'&lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&list_type=0&fromType=14&dibiaoid=0&confirmdate=9'
+        yield scrapy.Request(url=url, callback=self.parse_page)
+        print '######################  第%d页:%s  ###################' % (self.page_num,url)
+
             
     def parse_content(self,response):
         item=response.meta

@@ -1,6 +1,6 @@
 # coding=utf-8
 '''
-viki - 2016.12.018
+viki - 2016.12.18
 scrapy: 1.0.3
 python: 2.7.12
 system: mac10,windows8
